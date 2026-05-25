@@ -1,0 +1,59 @@
+# Built outputs
+/build/
+**/build/
+
+# Gradle
+.gradle/
+local.properties
+
+# Android Studio / IntelliJ IDEA
+*.iml
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetDropDown.xml
+.idea/androidTestResultsUserPreferences.xml
+.idea/uiDesigner.xml
+captures/
+
+# External native build
+.externalNativeBuild/
+.cxx/
+
+# Keystore / signing (never commit these)
+*.jks
+*.keystore
+keystore.properties
+release.properties
+
+# Generated / intermediate files
+*.ap_
+*.apk
+*.aab
+*.aar
+*.class
+*.dex
+R.java
+gen/
+
+# ProGuard / R8 mapping
+mapping.txt
+seeds.txt
+usage.txt
+
+# Lint
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code local settings
+.claude/settings.local.json
