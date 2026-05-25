@@ -7,13 +7,13 @@ import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.deligent.autostock.shared.StockQuote
 import com.deligent.autostock.shared.StockRepository
 import com.deligent.autostock.shared.SymbolStore
@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var progressBar: ProgressBar
     private lateinit var errorText: TextView
-    private lateinit var scrollView: ScrollView
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var stockContainer: LinearLayout
     private lateinit var sortButton: TextView
 
@@ -51,9 +51,11 @@ class MainActivity : AppCompatActivity() {
 
         progressBar = findViewById(R.id.progressBar)
         errorText = findViewById(R.id.errorText)
-        scrollView = findViewById(R.id.scrollView)
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         stockContainer = findViewById(R.id.stockContainer)
         sortButton = findViewById(R.id.sortButton)
+
+        swipeRefreshLayout.setOnRefreshListener { loadQuotes() }
 
         val version = packageManager.getPackageInfo(packageName, 0).versionName ?: "1.0"
         findViewById<TextView>(R.id.versionText).text = "v$version"
@@ -108,14 +110,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadQuotes() {
         loadJob?.cancel()
-        progressBar.visibility = View.VISIBLE
-        errorText.visibility = View.GONE
-        scrollView.visibility = View.GONE
+        if (!swipeRefreshLayout.isRefreshing) {
+            progressBar.visibility = View.VISIBLE
+            errorText.visibility = View.GONE
+            swipeRefreshLayout.visibility = View.GONE
+        }
         stockContainer.removeAllViews()
 
         loadJob = lifecycleScope.launch {
             val quotes = repository.getStockQuotes(symbolStore.getSymbols())
             progressBar.visibility = View.GONE
+            swipeRefreshLayout.isRefreshing = false
 
             if (quotes.isEmpty()) {
                 errorText.text = if (symbolStore.getSymbols().isEmpty())
@@ -123,6 +128,7 @@ class MainActivity : AppCompatActivity() {
                 else
                     "Unable to load quotes"
                 errorText.visibility = View.VISIBLE
+                swipeRefreshLayout.visibility = View.GONE
                 currentQuotes = emptyList()
                 return@launch
             }
@@ -161,7 +167,7 @@ class MainActivity : AppCompatActivity() {
             }
             stockContainer.addView(row)
         }
-        scrollView.visibility = View.VISIBLE
+        swipeRefreshLayout.visibility = View.VISIBLE
         errorText.visibility = View.GONE
     }
 }

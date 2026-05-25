@@ -15,32 +15,44 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.deligent.autostock.R
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MyCarAppScreen(carContext: CarContext) : Screen(carContext) {
     private var stockQuotes: List<StockQuote> = emptyList()
     private var isLoading = true
     private var errorMessage: String? = null
+    private var lastUpdated: String? = null
     private val repository = StockRepository()
     private val symbolStore = SymbolStore(carContext)
 
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onCreate(owner: LifecycleOwner) {
-                lifecycleScope.launch {
-                    try {
-                        stockQuotes = repository.getStockQuotes(symbolStore.getSymbols())
-                            .sortedByDescending { quote ->
-                                quote.percentChange.replace("+", "").replace("%", "")
-                                    .toDoubleOrNull()?.let { kotlin.math.abs(it) } ?: 0.0
-                            }
-                    } catch (e: Exception) {
-                        errorMessage = "Unable to load quotes"
-                    }
-                    isLoading = false
-                    invalidate()
-                }
+                loadQuotes()
             }
         })
+    }
+
+    private fun loadQuotes() {
+        isLoading = true
+        errorMessage = null
+        invalidate()
+        lifecycleScope.launch {
+            try {
+                stockQuotes = repository.getStockQuotes(symbolStore.getSymbols())
+                    .sortedByDescending { quote ->
+                        quote.percentChange.replace("+", "").replace("%", "")
+                            .toDoubleOrNull()?.let { kotlin.math.abs(it) } ?: 0.0
+                    }
+                lastUpdated = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
+            } catch (e: Exception) {
+                errorMessage = "Unable to load quotes"
+            }
+            isLoading = false
+            invalidate()
+        }
     }
 
     override fun onGetTemplate(): Template {
@@ -79,11 +91,29 @@ class MyCarAppScreen(carContext: CarContext) : Screen(carContext) {
                             .build()
                     )
                 }
+
+                val versionName = try {
+                    carContext.packageManager.getPackageInfo(carContext.packageName, 0).versionName ?: ""
+                } catch (e: Exception) { "" }
+
+                val refreshIcon = CarIcon.Builder(
+                    IconCompat.createWithResource(carContext, R.drawable.ic_refresh)
+                ).build()
+                listBuilder.addItem(
+                    GridItem.Builder()
+                        .setImage(refreshIcon, GridItem.IMAGE_TYPE_LARGE)
+                        .setTitle("Refresh")
+                        .setText("v$versionName")
+                        .setOnClickListener { loadQuotes() }
+                        .build()
+                )
             }
         }
 
+        val title = if (lastUpdated != null) "Markets as of $lastUpdated" else "Current Market"
+
         return GridTemplate.Builder()
-            .setTitle("Current Market")
+            .setTitle(title)
             .setHeaderAction(Action.APP_ICON)
             .setSingleList(listBuilder.build())
             .build()

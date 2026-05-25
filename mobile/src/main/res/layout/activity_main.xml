@@ -82,20 +82,26 @@
             android:textSize="16sp"
             android:visibility="gone" />
 
-        <ScrollView
-            android:id="@+id/scrollView"
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefreshLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone">
 
-            <LinearLayout
-                android:id="@+id/stockContainer"
+            <ScrollView
+                android:id="@+id/scrollView"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp" />
-        </ScrollView>
+                android:layout_height="match_parent">
+
+                <LinearLayout
+                    android:id="@+id/stockContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp" />
+            </ScrollView>
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
     </FrameLayout>
 
 
