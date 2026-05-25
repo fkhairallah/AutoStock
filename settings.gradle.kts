@@ -24,5 +24,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "AutoStock"
 include(":mobile")
-include(":automotive")
-include(":shared")
