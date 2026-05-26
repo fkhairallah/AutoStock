@@ -1,6 +1,6 @@
 # AutoStock
 
-A lightweight Android app for tracking real-time stock quotes. Supports both standard Android phones and Android Automotive (in-car displays).
+A lightweight Android app for tracking real-time stock quotes.
 
 ## Features
 
@@ -9,7 +9,6 @@ A lightweight Android app for tracking real-time stock quotes. Supports both sta
 - Color-coded price changes (green / red)
 - Sort by default order, alphabetical, or % price movement
 - Pull-to-refresh
-- Android Automotive (CarApp) interface for in-vehicle displays
 - Dark-themed Material Design 3 UI
 
 ## Screenshots
@@ -72,10 +71,7 @@ AutoStock/
 │       ├── MainActivity.kt          # Phone UI
 │       └── shared/
 │           ├── StockRepository.kt   # Finnhub API client
-│           ├── SymbolStore.kt       # Watchlist persistence
-│           ├── MyCarAppService.kt   # Automotive service
-│           ├── MyCarAppSession.kt   # Automotive session
-│           └── MyCarAppScreen.kt    # Automotive UI
+│           └── SymbolStore.kt       # Watchlist persistence
 └── gradle/
     └── libs.versions.toml           # Dependency version catalog
 ```
@@ -83,7 +79,6 @@ AutoStock/
 ## Tech Stack
 
 - **Kotlin** + Coroutines
-- **AndroidX CarApp** for Android Automotive support
 - **Material Design 3**
 - **SwipeRefreshLayout** for pull-to-refresh
 - **Finnhub REST API** for market data
