@@ -4,8 +4,10 @@ A lightweight Android app for tracking real-time stock quotes.
 
 ## Features
 
-- Real-time stock prices via the [Finnhub API](https://finnhub.io)
+- Real-time stock prices via the [Yahoo Finance API](https://finance.yahoo.com) (no API key required)
+- After-hours / pre-market prices with change displayed under each symbol
 - Add and remove stocks from a persistent watchlist
+- Swipe left to reveal a DELETE button for removing a stock
 - Color-coded price changes (green / red)
 - Sort by default order, alphabetical, or % price movement
 - Pull-to-refresh
@@ -20,7 +22,6 @@ _Coming soon_
 - Android Studio Hedgehog or newer
 - Android SDK API 36 (compile) / API 35+ (runtime)
 - Java 11+
-- A [Finnhub](https://finnhub.io) API key (free tier available)
 
 ## Setup
 
@@ -30,12 +31,7 @@ _Coming soon_
    cd AutoStock
    ```
 
-2. Add your Finnhub API key in `mobile/src/main/java/com/deligent/autostock/shared/StockRepository.kt`:
-   ```kotlin
-   private const val API_KEY = "your_finnhub_api_key_here"
-   ```
-
-3. Open the project in Android Studio and sync Gradle.
+2. Open the project in Android Studio and sync Gradle.
 
 ## Building
 
@@ -70,7 +66,7 @@ AutoStock/
 │   └── src/main/java/com/deligent/autostock/
 │       ├── MainActivity.kt          # Phone UI
 │       └── shared/
-│           ├── StockRepository.kt   # Finnhub API client
+│           ├── StockRepository.kt   # Yahoo Finance API client
 │           └── SymbolStore.kt       # Watchlist persistence
 └── gradle/
     └── libs.versions.toml           # Dependency version catalog
@@ -81,7 +77,7 @@ AutoStock/
 - **Kotlin** + Coroutines
 - **Material Design 3**
 - **SwipeRefreshLayout** for pull-to-refresh
-- **Finnhub REST API** for market data
+- **Yahoo Finance REST API** for real-time and extended-hours market data
 
 ## License
 

@@ -3,11 +3,15 @@ package com.deligent.autostock
 import android.os.Bundle
 import android.text.InputType
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.core.view.isVisible
+import kotlin.math.abs
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -36,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private enum class SortMode { DEFAULT, NAME, MOVER }
     private var sortMode = SortMode.DEFAULT
     private var currentQuotes = listOf<StockQuote>()
+    private var openSwipeCard: View? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -139,6 +144,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderQuotes() {
+        openSwipeCard = null
         stockContainer.removeAllViews()
 
         val sorted = when (sortMode) {
@@ -161,7 +167,18 @@ class MainActivity : AppCompatActivity() {
                 text = "${quote.change}  (${quote.percentChange})"
                 setTextColor(color)
             }
-            row.findViewById<TextView>(R.id.removeButton).setOnClickListener {
+            val ahContainer = row.findViewById<LinearLayout>(R.id.afterHoursContainer)
+            if (quote.hasAfterHours) {
+                ahContainer.isVisible = true
+                row.findViewById<TextView>(R.id.afterHoursLabel).text = "${quote.extendedHoursLabel} "
+                row.findViewById<TextView>(R.id.afterHoursPrice).text = quote.afterHoursPrice
+                val ahColor = if (quote.afterHoursIsPositive) 0xFF4CAF50.toInt() else 0xFFF44336.toInt()
+                row.findViewById<TextView>(R.id.afterHoursChange).apply {
+                    text = "${quote.afterHoursChange}  (${quote.afterHoursPercentChange})"
+                    setTextColor(ahColor)
+                }
+            }
+            attachSwipeToDelete(row) {
                 symbolStore.saveSymbols(symbolStore.getSymbols().filter { it != quote.symbol })
                 loadQuotes()
             }
@@ -169,5 +186,76 @@ class MainActivity : AppCompatActivity() {
         }
         swipeRefreshLayout.visibility = View.VISIBLE
         errorText.visibility = View.GONE
+    }
+
+    private fun attachSwipeToDelete(row: View, onDelete: () -> Unit) {
+        val contentCard = row.findViewById<View>(R.id.contentCard)
+        val deleteButton = row.findViewById<View>(R.id.deleteButton)
+        val deleteBtnWidth = 80 * resources.displayMetrics.density
+        val touchSlop = ViewConfiguration.get(this).scaledTouchSlop.toFloat()
+
+        var downX = 0f
+        var downY = 0f
+        var startTranslation = 0f
+        var swipeConfirmed = false
+
+        deleteButton.setOnClickListener { onDelete() }
+
+        contentCard.setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    if (openSwipeCard != null && openSwipeCard !== contentCard) {
+                        openSwipeCard?.animate()?.translationX(0f)?.setDuration(200)?.start()
+                        openSwipeCard = null
+                    }
+                    downX = event.rawX
+                    downY = event.rawY
+                    startTranslation = contentCard.translationX
+                    swipeConfirmed = false
+                    true  // must claim DOWN to receive MOVE/UP
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = event.rawX - downX
+                    val dy = event.rawY - downY
+                    if (!swipeConfirmed) {
+                        when {
+                            abs(dx) > touchSlop && abs(dx) > abs(dy) -> {
+                                swipeConfirmed = true
+                                contentCard.parent.requestDisallowInterceptTouchEvent(true)
+                            }
+                            abs(dy) > touchSlop -> {
+                                // vertical — release to scroll
+                                contentCard.parent.requestDisallowInterceptTouchEvent(false)
+                                return@setOnTouchListener false
+                            }
+                        }
+                    }
+                    if (swipeConfirmed) {
+                        contentCard.translationX = (startTranslation + dx).coerceIn(-deleteBtnWidth, 0f)
+                        true
+                    } else false
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (swipeConfirmed) {
+                        if (contentCard.translationX < -deleteBtnWidth / 2f) {
+                            contentCard.animate().translationX(-deleteBtnWidth).setDuration(200).start()
+                            openSwipeCard = contentCard
+                        } else {
+                            contentCard.animate().translationX(0f).setDuration(200).start()
+                            if (openSwipeCard === contentCard) openSwipeCard = null
+                        }
+                        true
+                    } else {
+                        // tap with no swipe: close if open
+                        if (contentCard.translationX < 0f) {
+                            contentCard.animate().translationX(0f).setDuration(200).start()
+                            if (openSwipeCard === contentCard) openSwipeCard = null
+                            true
+                        } else false
+                    }
+                }
+                else -> false
+            }
+        }
     }
 }
