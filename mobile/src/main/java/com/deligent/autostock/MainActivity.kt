@@ -17,20 +17,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.deligent.autostock.shared.QuoteState
+import com.deligent.autostock.shared.StockDataStore
 import com.deligent.autostock.shared.StockQuote
-import com.deligent.autostock.shared.StockRepository
 import com.deligent.autostock.shared.SymbolStore
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
-    private val repository = StockRepository()
     private lateinit var symbolStore: SymbolStore
-    private var loadJob: Job? = null
 
     private lateinit var progressBar: ProgressBar
     private lateinit var errorText: TextView
@@ -85,6 +84,41 @@ class MainActivity : AppCompatActivity() {
             showAddDialog()
         }
 
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                StockDataStore.state.collect { state ->
+                    when (state) {
+                        is QuoteState.Idle -> Unit
+                        is QuoteState.Loading -> {
+                            if (!swipeRefreshLayout.isRefreshing) {
+                                progressBar.visibility = View.VISIBLE
+                                errorText.visibility = View.GONE
+                                swipeRefreshLayout.visibility = View.GONE
+                                stockContainer.removeAllViews()
+                            }
+                        }
+                        is QuoteState.Success -> {
+                            progressBar.visibility = View.GONE
+                            swipeRefreshLayout.isRefreshing = false
+                            val symbols = symbolStore.getSymbols()
+                            if (state.quotes.isEmpty() || state.quotes.all { it.isError } && symbols.isEmpty()) {
+                                errorText.text = if (symbols.isEmpty())
+                                    "Tap ＋ to add your first stock"
+                                else
+                                    "Unable to load quotes"
+                                errorText.visibility = View.VISIBLE
+                                swipeRefreshLayout.visibility = View.GONE
+                                currentQuotes = emptyList()
+                            } else {
+                                currentQuotes = state.quotes
+                                renderQuotes()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         loadQuotes()
     }
 
@@ -120,33 +154,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadQuotes() {
-        loadJob?.cancel()
-        if (!swipeRefreshLayout.isRefreshing) {
-            progressBar.visibility = View.VISIBLE
-            errorText.visibility = View.GONE
-            swipeRefreshLayout.visibility = View.GONE
-        }
-        stockContainer.removeAllViews()
-
-        loadJob = lifecycleScope.launch {
-            val quotes = repository.getStockQuotes(symbolStore.getSymbols())
-            progressBar.visibility = View.GONE
-            swipeRefreshLayout.isRefreshing = false
-
-            if (quotes.isEmpty() || quotes.all { it.isError } && symbolStore.getSymbols().isEmpty()) {
-                errorText.text = if (symbolStore.getSymbols().isEmpty())
-                    "Tap ＋ to add your first stock"
-                else
-                    "Unable to load quotes"
-                errorText.visibility = View.VISIBLE
-                swipeRefreshLayout.visibility = View.GONE
-                currentQuotes = emptyList()
-                return@launch
-            }
-
-            currentQuotes = quotes
-            renderQuotes()
-        }
+        StockDataStore.refresh(symbolStore.getSymbols())
     }
 
     private fun renderQuotes() {
@@ -178,21 +186,20 @@ class MainActivity : AppCompatActivity() {
                     }
                     row.findViewById<TextView>(R.id.change).text = ""
                 }
-                quote.hasAfterHours -> {
-                    row.findViewById<TextView>(R.id.afterHoursHeading).isVisible = true
-                    row.findViewById<TextView>(R.id.price).text = quote.afterHoursPrice
-                    val ahColor = if (quote.afterHoursIsPositive) 0xFF4CAF50.toInt() else 0xFFF44336.toInt()
-                    row.findViewById<TextView>(R.id.change).apply {
-                        text = "${quote.afterHoursChange}  (${quote.afterHoursPercentChange})"
-                        setTextColor(ahColor)
-                    }
-                }
                 else -> {
                     row.findViewById<TextView>(R.id.price).text = quote.price
                     val color = if (quote.isPositive) 0xFF4CAF50.toInt() else 0xFFF44336.toInt()
                     row.findViewById<TextView>(R.id.change).apply {
                         text = "${quote.change}  (${quote.percentChange})"
                         setTextColor(color)
+                    }
+                    if (quote.hasAfterHours) {
+                        val ahColor = if (quote.afterHoursIsPositive) 0xFF4CAF50.toInt() else 0xFFF44336.toInt()
+                        row.findViewById<TextView>(R.id.afterHoursInfo).apply {
+                            isVisible = true
+                            text = "AH  ${quote.afterHoursPrice}  ${quote.afterHoursChange} (${quote.afterHoursPercentChange})"
+                            setTextColor(ahColor)
+                        }
                     }
                 }
             }

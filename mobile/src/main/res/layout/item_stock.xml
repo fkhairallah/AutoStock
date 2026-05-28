@@ -25,33 +25,24 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/colorSurface"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/symbol"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
+        <!-- Row 1: symbol | price -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="end"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <TextView
-                android:id="@+id/afterHoursHeading"
-                android:layout_width="wrap_content"
+                android:id="@+id/symbol"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="After Hours"
-                android:textColor="#88FFFFFF"
-                android:textSize="10sp"
-                android:visibility="gone" />
+                android:layout_weight="1"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/price"
@@ -60,12 +51,31 @@
                 android:textColor="@color/white"
                 android:textSize="16sp" />
 
+        </LinearLayout>
+
+        <!-- Row 2: after-hours info (left) | day change (right) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end">
+
+            <TextView
+                android:id="@+id/afterHoursInfo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="11sp"
+                android:visibility="gone" />
+
             <TextView
                 android:id="@+id/change"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="13sp" />
+
         </LinearLayout>
+
     </LinearLayout>
 
 </FrameLayout>

@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="mobile">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-05-25T13:58:25.469018600Z">
+        <DropdownSelection timestamp="2026-05-28T13:01:46.516368900Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\fady\.android\avd\Automotive_Ultrawide.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\fady\.android\avd\Pixel_9.avd" />
             </handle>
           </Target>
         </DropdownSelection>

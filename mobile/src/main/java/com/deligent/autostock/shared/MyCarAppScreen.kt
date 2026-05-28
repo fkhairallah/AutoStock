@@ -16,50 +16,42 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.deligent.autostock.R
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class MyCarAppScreen(carContext: CarContext) : Screen(carContext) {
     private var stockQuotes: List<StockQuote> = emptyList()
     private var isLoading = true
-    private var errorMessage: String? = null
     private var lastUpdated: String? = null
-    private val repository = StockRepository()
     private val symbolStore = SymbolStore(carContext)
 
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onCreate(owner: LifecycleOwner) {
-                loadQuotes()
+                if (StockDataStore.state.value is QuoteState.Idle) {
+                    StockDataStore.refresh(symbolStore.getSymbols())
+                }
+                lifecycleScope.launch {
+                    StockDataStore.state.collect { state ->
+                        when (state) {
+                            is QuoteState.Idle -> Unit
+                            is QuoteState.Loading -> {
+                                isLoading = true
+                                invalidate()
+                            }
+                            is QuoteState.Success -> {
+                                stockQuotes = state.quotes
+                                lastUpdated = state.lastUpdated
+                                isLoading = false
+                                invalidate()
+                            }
+                        }
+                    }
+                }
             }
         })
     }
 
     private fun loadQuotes() {
-        isLoading = true
-        errorMessage = null
-        invalidate()
-        lifecycleScope.launch {
-            try {
-                val raw = repository.getStockQuotes(symbolStore.getSymbols())
-                val sortMode = carContext.getSharedPreferences("autostock_prefs", Context.MODE_PRIVATE)
-                    .getString("sort_mode", "DEFAULT") ?: "DEFAULT"
-                stockQuotes = when (sortMode) {
-                    "NAME" -> raw.sortedBy { it.symbol }
-                    "MOVER" -> raw.sortedByDescending { quote ->
-                        quote.percentChange.replace("+", "").replace("%", "")
-                            .toDoubleOrNull()?.let { kotlin.math.abs(it) } ?: 0.0
-                    }
-                    else -> raw
-                }
-                lastUpdated = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
-            } catch (e: Exception) {
-                errorMessage = "Unable to load quotes"
-            }
-            isLoading = false
-            invalidate()
-        }
+        StockDataStore.refresh(symbolStore.getSymbols())
     }
 
     override fun onGetTemplate(): Template {
@@ -74,32 +66,37 @@ class MyCarAppScreen(carContext: CarContext) : Screen(carContext) {
                         .build()
                 )
             }
-            errorMessage != null -> {
-                listBuilder.addItem(
-                    GridItem.Builder()
-                        .setTitle(errorMessage!!)
-                        .setImage(CarIcon.ALERT)
-                        .build()
-                )
-            }
             else -> {
-                for (quote in stockQuotes) {
-                    val color = if (quote.isPositive) CarColor.GREEN else CarColor.RED
-                    val iconRes = if (quote.isPositive) R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
+                val sortMode = carContext.getSharedPreferences("autostock_prefs", Context.MODE_PRIVATE)
+                    .getString("sort_mode", "DEFAULT") ?: "DEFAULT"
+                val sorted = when (sortMode) {
+                    "NAME" -> stockQuotes.sortedBy { it.symbol }
+                    "MOVER" -> stockQuotes.sortedByDescending { quote ->
+                        quote.percentChange.replace("+", "").replace("%", "")
+                            .toDoubleOrNull()?.let { kotlin.math.abs(it) } ?: 0.0
+                    }
+                    else -> stockQuotes
+                }
+
+                for (quote in sorted) {
+                    val isPositive = if (quote.hasAfterHours) quote.afterHoursIsPositive else quote.isPositive
+                    val color = if (isPositive) CarColor.GREEN else CarColor.RED
+                    val iconRes = if (isPositive) R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
                     val icon = CarIcon.Builder(
                         IconCompat.createWithResource(carContext, iconRes)
                     ).setTint(color).build()
 
-                    val text = if (quote.hasAfterHours)
-                        "${quote.change} (${quote.percentChange})  AH ${quote.afterHoursPrice} ${quote.afterHoursChange}"
+                    val displayPrice = if (quote.hasAfterHours) quote.afterHoursPrice else quote.price
+                    val displayChange = if (quote.hasAfterHours)
+                        "${quote.afterHoursChange}  (${quote.afterHoursPercentChange})"
                     else
                         "${quote.change}  (${quote.percentChange})"
 
                     listBuilder.addItem(
                         GridItem.Builder()
                             .setImage(icon, GridItem.IMAGE_TYPE_ICON)
-                            .setTitle("${quote.symbol}  ${quote.price}")
-                            .setText(text)
+                            .setTitle("${quote.symbol}  $displayPrice")
+                            .setText(displayChange)
                             .build()
                     )
                 }
@@ -122,7 +119,12 @@ class MyCarAppScreen(carContext: CarContext) : Screen(carContext) {
             }
         }
 
-        val title = if (lastUpdated != null) "Markets as of $lastUpdated" else "Current Market"
+        val afterHours = stockQuotes.any { it.hasAfterHours }
+        val title = when {
+            lastUpdated == null -> "Current Market"
+            afterHours -> "After Hours Trading as of $lastUpdated"
+            else -> "Markets as of $lastUpdated"
+        }
 
         return GridTemplate.Builder()
             .setTitle(title)
