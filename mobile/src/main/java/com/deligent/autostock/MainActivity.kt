@@ -1,5 +1,6 @@
 package com.deligent.autostock
 
+import android.content.Context
 import android.os.Bundle
 import android.text.InputType
 import android.view.LayoutInflater
@@ -38,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sortButton: TextView
 
     private enum class SortMode { DEFAULT, NAME, MOVER }
+    private val prefs by lazy { getSharedPreferences("autostock_prefs", Context.MODE_PRIVATE) }
     private var sortMode = SortMode.DEFAULT
     private var currentQuotes = listOf<StockQuote>()
     private var openSwipeCard: View? = null
@@ -65,12 +67,16 @@ class MainActivity : AppCompatActivity() {
         val version = packageManager.getPackageInfo(packageName, 0).versionName ?: "1.0"
         findViewById<TextView>(R.id.versionText).text = "v$version"
 
+        sortMode = SortMode.valueOf(prefs.getString("sort_mode", SortMode.DEFAULT.name) ?: SortMode.DEFAULT.name)
+        updateSortButtonLabel()
+
         sortButton.setOnClickListener {
             sortMode = when (sortMode) {
                 SortMode.DEFAULT -> SortMode.NAME
                 SortMode.NAME -> SortMode.MOVER
                 SortMode.MOVER -> SortMode.DEFAULT
             }
+            prefs.edit().putString("sort_mode", sortMode.name).apply()
             updateSortButtonLabel()
             renderQuotes()
         }
@@ -127,7 +133,7 @@ class MainActivity : AppCompatActivity() {
             progressBar.visibility = View.GONE
             swipeRefreshLayout.isRefreshing = false
 
-            if (quotes.isEmpty()) {
+            if (quotes.isEmpty() || quotes.all { it.isError } && symbolStore.getSymbols().isEmpty()) {
                 errorText.text = if (symbolStore.getSymbols().isEmpty())
                     "Tap ＋ to add your first stock"
                 else
@@ -147,13 +153,15 @@ class MainActivity : AppCompatActivity() {
         openSwipeCard = null
         stockContainer.removeAllViews()
 
-        val sorted = when (sortMode) {
+        val base = when (sortMode) {
             SortMode.DEFAULT -> currentQuotes
             SortMode.NAME -> currentQuotes.sortedBy { it.symbol }
             SortMode.MOVER -> currentQuotes.sortedByDescending {
                 abs(it.percentChange.replace("%", "").replace("+", "").toDoubleOrNull() ?: 0.0)
             }
         }
+        // Error rows always sink to the bottom regardless of sort
+        val sorted = base.filter { !it.isError } + base.filter { it.isError }
 
         if (sorted.isEmpty()) return
 
@@ -161,21 +169,31 @@ class MainActivity : AppCompatActivity() {
             val row = LayoutInflater.from(this)
                 .inflate(R.layout.item_stock, stockContainer, false)
             row.findViewById<TextView>(R.id.symbol).text = quote.symbol
-            row.findViewById<TextView>(R.id.price).text = quote.price
-            val color = if (quote.isPositive) 0xFF4CAF50.toInt() else 0xFFF44336.toInt()
-            row.findViewById<TextView>(R.id.change).apply {
-                text = "${quote.change}  (${quote.percentChange})"
-                setTextColor(color)
-            }
-            val ahContainer = row.findViewById<LinearLayout>(R.id.afterHoursContainer)
-            if (quote.hasAfterHours) {
-                ahContainer.isVisible = true
-                row.findViewById<TextView>(R.id.afterHoursLabel).text = "${quote.extendedHoursLabel} "
-                row.findViewById<TextView>(R.id.afterHoursPrice).text = quote.afterHoursPrice
-                val ahColor = if (quote.afterHoursIsPositive) 0xFF4CAF50.toInt() else 0xFFF44336.toInt()
-                row.findViewById<TextView>(R.id.afterHoursChange).apply {
-                    text = "${quote.afterHoursChange}  (${quote.afterHoursPercentChange})"
-                    setTextColor(ahColor)
+
+            when {
+                quote.isError -> {
+                    row.findViewById<TextView>(R.id.price).apply {
+                        text = "—"
+                        setTextColor(0x88FFFFFF.toInt())
+                    }
+                    row.findViewById<TextView>(R.id.change).text = ""
+                }
+                quote.hasAfterHours -> {
+                    row.findViewById<TextView>(R.id.afterHoursHeading).isVisible = true
+                    row.findViewById<TextView>(R.id.price).text = quote.afterHoursPrice
+                    val ahColor = if (quote.afterHoursIsPositive) 0xFF4CAF50.toInt() else 0xFFF44336.toInt()
+                    row.findViewById<TextView>(R.id.change).apply {
+                        text = "${quote.afterHoursChange}  (${quote.afterHoursPercentChange})"
+                        setTextColor(ahColor)
+                    }
+                }
+                else -> {
+                    row.findViewById<TextView>(R.id.price).text = quote.price
+                    val color = if (quote.isPositive) 0xFF4CAF50.toInt() else 0xFFF44336.toInt()
+                    row.findViewById<TextView>(R.id.change).apply {
+                        text = "${quote.change}  (${quote.percentChange})"
+                        setTextColor(color)
+                    }
                 }
             }
             attachSwipeToDelete(row) {

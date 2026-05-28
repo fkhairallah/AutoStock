@@ -29,56 +29,29 @@
         android:orientation="horizontal"
         android:padding="16dp">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/symbol"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/symbol"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:id="@+id/afterHoursContainer"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:orientation="horizontal"
-                android:visibility="gone">
-
-                <TextView
-                    android:id="@+id/afterHoursLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="#88FFFFFF"
-                    android:textSize="11sp" />
-
-                <TextView
-                    android:id="@+id/afterHoursPrice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="#CCFFFFFF"
-                    android:textSize="11sp" />
-
-                <TextView
-                    android:id="@+id/afterHoursChange"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </LinearLayout>
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="end"
             android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/afterHoursHeading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="After Hours"
+                android:textColor="#88FFFFFF"
+                android:textSize="10sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/price"

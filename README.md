@@ -9,7 +9,7 @@ A lightweight Android app for tracking real-time stock quotes.
 - Add and remove stocks from a persistent watchlist
 - Swipe left to reveal a DELETE button for removing a stock
 - Color-coded price changes (green / red)
-- Sort by default order, alphabetical, or % price movement
+- Sort by default order, alphabetical, or % price movement — preference is saved and restored on next launch
 - Pull-to-refresh
 - Dark-themed Material Design 3 UI
 

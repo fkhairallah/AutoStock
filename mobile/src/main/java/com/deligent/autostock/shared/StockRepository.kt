@@ -21,23 +21,33 @@ data class StockQuote(
     val afterHoursPercentChange: String = "",
     val afterHoursIsPositive: Boolean = true,
     val hasAfterHours: Boolean = false,
-    val extendedHoursLabel: String = "AH"
+    val extendedHoursLabel: String = "AH",
+    val isError: Boolean = false
 )
 
 class StockRepository {
 
     suspend fun getStockQuotes(symbols: List<String>): List<StockQuote> = coroutineScope {
-        symbols.map { symbol ->
+        symbols.mapIndexed { index, symbol ->
             async(Dispatchers.IO) {
-                try { fetchQuote(symbol) } catch (e: Exception) { null }
+                // stagger requests to avoid burst rate-limiting
+                if (index > 0) Thread.sleep(200L * index)
+                var lastEx: Exception? = null
+                repeat(3) { attempt ->
+                    if (attempt > 0) Thread.sleep(800L * attempt)
+                    try { return@async fetchQuote(symbol) } catch (e: Exception) { lastEx = e }
+                }
+                StockQuote(symbol = symbol, price = "—", change = "", percentChange = "", isPositive = true, isError = true)
             }
-        }.awaitAll().filterNotNull()
+        }.awaitAll()
     }
 
     private fun fetchQuote(symbol: String): StockQuote {
         val url = URL("https://query2.finance.yahoo.com/v8/finance/chart/$symbol?interval=5m&range=1d&includePrePost=true")
         val connection = url.openConnection() as HttpsURLConnection
         connection.setRequestProperty("User-Agent", "Mozilla/5.0")
+        connection.connectTimeout = 10_000
+        connection.readTimeout = 10_000
 
         val code = connection.responseCode
         if (code !in 200..299) {

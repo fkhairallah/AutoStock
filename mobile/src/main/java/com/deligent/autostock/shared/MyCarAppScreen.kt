@@ -1,5 +1,6 @@
 package com.deligent.autostock.shared
 
+import android.content.Context
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -41,11 +42,17 @@ class MyCarAppScreen(carContext: CarContext) : Screen(carContext) {
         invalidate()
         lifecycleScope.launch {
             try {
-                stockQuotes = repository.getStockQuotes(symbolStore.getSymbols())
-                    .sortedByDescending { quote ->
+                val raw = repository.getStockQuotes(symbolStore.getSymbols())
+                val sortMode = carContext.getSharedPreferences("autostock_prefs", Context.MODE_PRIVATE)
+                    .getString("sort_mode", "DEFAULT") ?: "DEFAULT"
+                stockQuotes = when (sortMode) {
+                    "NAME" -> raw.sortedBy { it.symbol }
+                    "MOVER" -> raw.sortedByDescending { quote ->
                         quote.percentChange.replace("+", "").replace("%", "")
                             .toDoubleOrNull()?.let { kotlin.math.abs(it) } ?: 0.0
                     }
+                    else -> raw
+                }
                 lastUpdated = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
             } catch (e: Exception) {
                 errorMessage = "Unable to load quotes"
@@ -83,11 +90,16 @@ class MyCarAppScreen(carContext: CarContext) : Screen(carContext) {
                         IconCompat.createWithResource(carContext, iconRes)
                     ).setTint(color).build()
 
+                    val text = if (quote.hasAfterHours)
+                        "${quote.change} (${quote.percentChange})  AH ${quote.afterHoursPrice} ${quote.afterHoursChange}"
+                    else
+                        "${quote.change}  (${quote.percentChange})"
+
                     listBuilder.addItem(
                         GridItem.Builder()
                             .setImage(icon, GridItem.IMAGE_TYPE_ICON)
                             .setTitle("${quote.symbol}  ${quote.price}")
-                            .setText("${quote.change}  (${quote.percentChange})")
+                            .setText(text)
                             .build()
                     )
                 }
