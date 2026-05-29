@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private var sortMode = SortMode.DEFAULT
     private var currentQuotes = listOf<StockQuote>()
     private var openSwipeCard: View? = null
+    private var appVersion: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,8 +64,7 @@ class MainActivity : AppCompatActivity() {
 
         swipeRefreshLayout.setOnRefreshListener { loadQuotes() }
 
-        val version = packageManager.getPackageInfo(packageName, 0).versionName ?: "1.0"
-        findViewById<TextView>(R.id.versionText).text = "v$version"
+        appVersion = packageManager.getPackageInfo(packageName, 0).versionName ?: "1.0"
 
         sortMode = SortMode.valueOf(prefs.getString("sort_mode", SortMode.DEFAULT.name) ?: SortMode.DEFAULT.name)
         updateSortButtonLabel()
@@ -217,6 +217,15 @@ class MainActivity : AppCompatActivity() {
             }
             stockContainer.addView(row)
         }
+        val footer = TextView(this).apply {
+            text = "v$appVersion  ·  © Deligent LLC"
+            setTextColor(0x55FFFFFF.toInt())
+            textSize = 11f
+            textAlignment = View.TEXT_ALIGNMENT_CENTER
+            setPadding(0, 24, 0, 16)
+        }
+        stockContainer.addView(footer)
+
         swipeRefreshLayout.visibility = View.VISIBLE
         errorText.visibility = View.GONE
     }
