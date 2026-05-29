@@ -22,7 +22,9 @@ data class StockQuote(
     val afterHoursIsPositive: Boolean = true,
     val hasAfterHours: Boolean = false,
     val extendedHoursLabel: String = "AH",
-    val isError: Boolean = false
+    val isError: Boolean = false,
+    val prevClose: String = "",
+    val isExtendedHours: Boolean = false
 )
 
 class StockRepository {
@@ -89,11 +91,13 @@ class StockRepository {
             label = "AH"
             val closes = result.getJSONObject("indicators")
                 .getJSONArray("quote").getJSONObject(0)
-                .getJSONArray("close")
-            for (i in closes.length() - 1 downTo 0) {
-                if (!closes.isNull(i)) {
-                    ahPrice = closes.getDouble(i)
-                    break
+                .optJSONArray("close")
+            if (closes != null) {
+                for (i in closes.length() - 1 downTo 0) {
+                    if (!closes.isNull(i)) {
+                        ahPrice = closes.getDouble(i)
+                        break
+                    }
                 }
             }
         }
@@ -115,7 +119,9 @@ class StockRepository {
             afterHoursPercentChange = if (hasAH) String.format(Locale.US, "%s%.2f%%", ahSign, ahPct) else "",
             afterHoursIsPositive = ahIsPositive,
             hasAfterHours = hasAH,
-            extendedHoursLabel = label
+            extendedHoursLabel = label,
+            prevClose = String.format(Locale.US, "%.2f", prevClose),
+            isExtendedHours = isPreMarket || isPostMarket
         )
     }
 }

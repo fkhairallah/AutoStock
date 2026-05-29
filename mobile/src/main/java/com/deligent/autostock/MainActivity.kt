@@ -193,12 +193,20 @@ class MainActivity : AppCompatActivity() {
                         text = "${quote.change}  (${quote.percentChange})"
                         setTextColor(color)
                     }
-                    if (quote.hasAfterHours) {
-                        val ahColor = if (quote.afterHoursIsPositive) 0xFF4CAF50.toInt() else 0xFFF44336.toInt()
-                        row.findViewById<TextView>(R.id.afterHoursInfo).apply {
-                            isVisible = true
-                            text = "AH  ${quote.afterHoursPrice}  ${quote.afterHoursChange} (${quote.afterHoursPercentChange})"
-                            setTextColor(ahColor)
+                    row.findViewById<TextView>(R.id.afterHoursInfo).apply {
+                        when {
+                            quote.hasAfterHours -> {
+                                isVisible = true
+                                val ahColor = if (quote.afterHoursIsPositive) 0xFF4CAF50.toInt() else 0xFFF44336.toInt()
+                                text = "AH  ${quote.afterHoursPrice}  ${quote.afterHoursChange} (${quote.afterHoursPercentChange})"
+                                setTextColor(ahColor)
+                            }
+                            quote.isExtendedHours -> {
+                                isVisible = true
+                                text = "AH  N/A"
+                                setTextColor(0x88FFFFFF.toInt())
+                            }
+                            else -> isVisible = false
                         }
                     }
                 }
