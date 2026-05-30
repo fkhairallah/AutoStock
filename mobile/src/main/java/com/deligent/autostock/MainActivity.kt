@@ -17,6 +17,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -48,9 +49,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+
+        val headerBar = findViewById<LinearLayout>(R.id.headerBar)
+        val rootView = findViewById<LinearLayout>(R.id.main)
+        val scrollContent = findViewById<LinearLayout>(R.id.stockContainer)
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            val dp12 = (12 * resources.displayMetrics.density).toInt()
+            val dp8 = (8 * resources.displayMetrics.density).toInt()
+            val dp4 = (4 * resources.displayMetrics.density).toInt()
+            v.updatePadding(left = systemBars.left, right = systemBars.right)
+            headerBar.setPadding(dp12, systemBars.top + dp4, dp12, dp4 / 2)
+            scrollContent.setPadding(0, dp8, 0, systemBars.bottom + dp8)
             insets
         }
 

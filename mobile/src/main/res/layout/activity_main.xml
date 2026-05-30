@@ -7,12 +7,16 @@
     android:orientation="vertical">
 
     <LinearLayout
+        android:id="@+id/headerBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/colorHeader"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="2dp">
 
         <TextView
             android:layout_width="0dp"
@@ -29,7 +33,10 @@
             android:layout_height="wrap_content"
             android:clickable="true"
             android:focusable="true"
-            android:padding="8dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
             android:text="⇅"
             android:textColor="@color/white"
             android:textSize="20sp" />
@@ -41,7 +48,10 @@
             android:layout_marginStart="4dp"
             android:clickable="true"
             android:focusable="true"
-            android:padding="8dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
             android:text="＋"
             android:textColor="@color/white"
             android:textSize="24sp" />
