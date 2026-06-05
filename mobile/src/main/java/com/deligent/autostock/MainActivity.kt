@@ -3,6 +3,9 @@ package com.deligent.autostock
 import android.content.Context
 import android.os.Bundle
 import android.text.InputType
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -37,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var stockContainer: LinearLayout
     private lateinit var sortButton: TextView
+    private lateinit var lastUpdatedText: TextView
 
     private enum class SortMode { DEFAULT, NAME, MOVER }
     private val prefs by lazy { getSharedPreferences("autostock_prefs", Context.MODE_PRIVATE) }
@@ -71,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         stockContainer = findViewById(R.id.stockContainer)
         sortButton = findViewById(R.id.sortButton)
+        lastUpdatedText = findViewById(R.id.lastUpdatedText)
 
         swipeRefreshLayout.setOnRefreshListener { loadQuotes() }
 
@@ -110,6 +115,7 @@ class MainActivity : AppCompatActivity() {
                         is QuoteState.Success -> {
                             progressBar.visibility = View.GONE
                             swipeRefreshLayout.isRefreshing = false
+                            lastUpdatedText.text = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
                             val symbols = symbolStore.getSymbols()
                             if (state.quotes.isEmpty() || state.quotes.all { it.isError } && symbols.isEmpty()) {
                                 errorText.text = if (symbols.isEmpty())
